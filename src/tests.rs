@@ -165,3 +165,142 @@ fn test_rotate() {
     dbg!(&tree);
     assert_eq!(tree, tree2);
 }
+
+#[test]
+fn test_rotate_left_right() {
+    //      5
+    //     /
+    //    2
+    //     \
+    //      3
+    let mut tree = BST::new();
+    tree.insert_unbalanced(5);
+    tree.insert_unbalanced(2);
+    tree.insert_unbalanced(3);
+
+    dbg!(&tree);
+
+    tree.rotate_left_right();
+
+    dbg!(&tree);
+
+    // Root should be 3
+    assert_eq!(tree.value(), Some(&3));
+
+    // Left child of root should be 2
+    let left = tree.left().expect("Left subtree should exist");
+    assert_eq!(left.value(), Some(&2));
+
+    // Right child of root should be 5
+    let right = tree.right().expect("Right subtree should exist");
+    assert_eq!(right.value(), Some(&5));
+}
+
+#[test]
+fn test_rotate_right_left() {
+    //      2
+    //       \
+    //        5
+    //       /
+    //      3
+    let mut tree = BST::new();
+    tree.insert_unbalanced(2);
+    tree.insert_unbalanced(5);
+    tree.insert_unbalanced(3);
+
+    dbg!(&tree);
+
+    tree.rotate_right_left();
+
+    dbg!(&tree);
+
+    // Root should be 3
+    assert_eq!(tree.value(), Some(&3));
+
+    // Left child of root should be 2
+    let left = tree.left().expect("Left subtree should exist");
+    assert_eq!(left.value(), Some(&2));
+
+    // Right child of root should be 5
+    let right = tree.right().expect("Right subtree should exist");
+    assert_eq!(right.value(), Some(&5));
+}
+
+#[test]
+fn test_rebalance() {
+    // Right rotation case (bf > 1, left-heavy)
+    //      5
+    //     /
+    //    3
+    //   /
+    //  2
+    let mut tree = BST::new();
+    tree.insert_unbalanced(5);
+    tree.insert_unbalanced(3);
+    tree.insert_unbalanced(2);
+
+    dbg!(&tree);
+    tree.rebalance();
+    dbg!(&tree);
+
+    assert_eq!(tree.value(), Some(&3));
+    assert_eq!(tree.left().unwrap().value(), Some(&2));
+    assert_eq!(tree.right().unwrap().value(), Some(&5));
+
+    // Left rotation case (bf < -1, right-heavy)
+    //      2
+    //       \
+    //        5
+    //         \
+    //          6
+    let mut tree2 = BST::new();
+    tree2.insert_unbalanced(2);
+    tree2.insert_unbalanced(5);
+    tree2.insert_unbalanced(6);
+
+    dbg!(&tree2);
+    tree2.rebalance();
+    dbg!(&tree2);
+
+    assert_eq!(tree2.value(), Some(&5));
+    assert_eq!(tree2.left().unwrap().value(), Some(&2));
+    assert_eq!(tree2.right().unwrap().value(), Some(&6));
+
+    // Left-Right rotation case
+    //      5
+    //     /
+    //    2
+    //     \
+    //      3
+    let mut tree3 = BST::new();
+    tree3.insert_unbalanced(5);
+    tree3.insert_unbalanced(2);
+    tree3.insert_unbalanced(3);
+
+    dbg!(&tree3);
+    tree3.rebalance();
+    dbg!(&tree3);
+
+    assert_eq!(tree3.value(), Some(&3));
+    assert_eq!(tree3.left().unwrap().value(), Some(&2));
+    assert_eq!(tree3.right().unwrap().value(), Some(&5));
+
+    // Right-Left rotation case
+    //      2
+    //       \
+    //        5
+    //       /
+    //      3
+    let mut tree4 = BST::new();
+    tree4.insert_unbalanced(2);
+    tree4.insert_unbalanced(5);
+    tree4.insert_unbalanced(3);
+
+    dbg!(&tree4);
+    tree4.rebalance();
+    dbg!(&tree4);
+
+    assert_eq!(tree4.value(), Some(&3));
+    assert_eq!(tree4.left().unwrap().value(), Some(&2));
+    assert_eq!(tree4.right().unwrap().value(), Some(&5));
+}

@@ -420,6 +420,85 @@ impl<T> BST<T> {
             }
         }
     }
+
+    /// Helper function to rotate the left subtree left, and then the whole tree right.
+    fn rotate_left_right(&mut self) {
+        match self {
+            Self::Empty => return,
+            Self::Node { left, .. } => {
+                if let Some(left) = left {
+                    left.rotate_left();
+                    self.rotate_right();
+                }
+            }
+        }
+    }
+
+    /// Helper function to rotate the left subtree right, and then the whole tree left.
+    fn rotate_right_left(&mut self) {
+        match self {
+            Self::Empty => return,
+            Self::Node { right, .. } => {
+                if let Some(right) = right {
+                    right.rotate_right();
+                    self.rotate_left();
+                }
+            }
+        }
+    }
+
+    /// Rebalances the whole tree after it has a `|balance_factor|` of 1 or more.
+    fn rebalance(&mut self) {
+        let bf = self.balance_factor();
+
+        match self {
+            Self::Empty => return,
+            Self::Node { left, right, .. } => {
+                if bf > 1 {
+                    if let Some(left) = left {
+                        if left.balance_factor() >= 0 {
+                            self.rotate_right();
+                        } else {
+                            self.rotate_left_right();
+                        }
+                    }
+                } else if bf < -1 {
+                    if let Some(right) = right {
+                        if right.balance_factor() <= 0 {
+                            self.rotate_left();
+                        } else {
+                            self.rotate_right_left();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Inserts a value into the tree, rebalancing it right away.
+    ///
+    /// If the value already exists, it will not be inserted again.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert(5);
+    /// tree.insert(3);
+    /// tree.insert(7);
+    /// assert!(tree.contains(5));
+    /// assert!(tree.contains(3));
+    /// assert!(tree.contains(7));
+    /// ```
+    pub fn insert(&mut self, val: T)
+    where
+        T: PartialOrd,
+    {
+        self.insert_unbalanced(val);
+        self.rebalance();
+    }
 }
 
 impl<T> Clone for BST<T>
