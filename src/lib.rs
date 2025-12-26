@@ -21,7 +21,7 @@ pub enum BST<T> {
 
 impl<T> Default for BST<T> {
     fn default() -> Self {
-        BST::Empty
+        Self::Empty
     }
 }
 
@@ -38,11 +38,11 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let tree: BST<i32> = BST::new();
+    /// let tree: BST<i32> = Self::new();
     /// assert!(tree.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        matches!(self, BST::Empty)
+        matches!(self, Self::Empty)
     }
 
     /// Clears the tree, removing all nodes.
@@ -52,13 +52,13 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// tree.insert_unbalanced(1);
     /// tree.clear();
     /// assert!(tree.is_empty());
     /// ```
     pub fn clear(&mut self) {
-        *self = BST::Empty
+        *self = Self::Empty
     }
 
     /// Returns a reference to the value of the current node, if the tree is not empty.
@@ -68,15 +68,15 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// assert!(tree.value().is_none());
     /// tree.insert_unbalanced(10);
     /// assert_eq!(tree.value(), Some(&10));
     /// ```
     pub fn value(&self) -> Option<&T> {
         match self {
-            BST::Empty => None,
-            BST::Node {
+            Self::Empty => None,
+            Self::Node {
                 left: _,
                 value,
                 right: _,
@@ -91,7 +91,7 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// assert_eq!(tree.count_nodes(), 0);
     /// tree.insert_unbalanced(1);
     /// tree.insert_unbalanced(2);
@@ -99,8 +99,8 @@ impl<T> BST<T> {
     /// ```
     pub fn count_nodes(&self) -> usize {
         match self {
-            BST::Empty => 0,
-            BST::Node {
+            Self::Empty => 0,
+            Self::Node {
                 left,
                 value: _,
                 right,
@@ -125,7 +125,7 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// assert_eq!(tree.depth(), 0);
     /// tree.insert_unbalanced(1);
     /// assert_eq!(tree.depth(), 1);
@@ -134,8 +134,8 @@ impl<T> BST<T> {
     /// ```
     pub fn depth(&self) -> usize {
         match self {
-            BST::Empty => 0,
-            BST::Node {
+            Self::Empty => 0,
+            Self::Node {
                 left,
                 value: _,
                 right,
@@ -163,7 +163,7 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// tree.insert_unbalanced(5);
     /// tree.insert_unbalanced(3);
     /// tree.insert_unbalanced(7);
@@ -176,15 +176,15 @@ impl<T> BST<T> {
         T: PartialEq + PartialOrd,
     {
         match self {
-            BST::Empty => {
-                *self = BST::Node {
+            Self::Empty => {
+                *self = Self::Node {
                     left: None,
                     value: val,
                     right: None,
                 };
                 return self;
             }
-            BST::Node { left, value, right } => {
+            Self::Node { left, value, right } => {
                 if *value == val {
                     return self;
                 }
@@ -192,7 +192,7 @@ impl<T> BST<T> {
                     if let Some(left_node) = left.as_deref_mut() {
                         left_node.insert_unbalanced(val);
                     } else {
-                        *left = Some(Box::new(BST::Node {
+                        *left = Some(Box::new(Self::Node {
                             left: None,
                             value: val,
                             right: None,
@@ -203,7 +203,7 @@ impl<T> BST<T> {
                     if let Some(right_node) = right.as_deref_mut() {
                         right_node.insert_unbalanced(val);
                     } else {
-                        *right = Some(Box::new(BST::Node {
+                        *right = Some(Box::new(Self::Node {
                             left: None,
                             value: val,
                             right: None,
@@ -224,7 +224,7 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// tree.insert_unbalanced(5);
     /// tree.insert_unbalanced(3);
     /// assert_eq!(tree.find(3).unwrap().value(), Some(&3));
@@ -235,8 +235,8 @@ impl<T> BST<T> {
         T: PartialEq + PartialOrd,
     {
         match self {
-            BST::Empty => None,
-            BST::Node { left, value, right } => {
+            Self::Empty => None,
+            Self::Node { left, value, right } => {
                 if *value == val {
                     return Some(self);
                 } else if val < *value {
@@ -255,7 +255,7 @@ impl<T> BST<T> {
     /// ```
     /// use bst::BST;
     ///
-    /// let mut tree = BST::new();
+    /// let mut tree = Self::new();
     /// tree.insert_unbalanced(5);
     /// assert!(tree.contains(5));
     /// assert!(!tree.contains(10));
@@ -270,8 +270,8 @@ impl<T> BST<T> {
     /// Helper function to get a mutable reference to the left subtree of a node
     fn left(&mut self) -> Option<&mut Self> {
         match self {
-            BST::Empty => None,
-            BST::Node {
+            Self::Empty => None,
+            Self::Node {
                 left,
                 value: _,
                 right: _,
@@ -282,8 +282,8 @@ impl<T> BST<T> {
     /// Helper function to get a mutable reference to the right subtree of a node
     fn right(&mut self) -> Option<&mut Self> {
         match self {
-            BST::Empty => None,
-            BST::Node {
+            Self::Empty => None,
+            Self::Node {
                 left: _,
                 value: _,
                 right,
@@ -294,8 +294,8 @@ impl<T> BST<T> {
     /// Helper function to get a reference to the node at the left end of the tree.
     fn left_end(&self) -> Option<&Self> {
         match self {
-            BST::Empty => None,
-            BST::Node {
+            Self::Empty => None,
+            Self::Node {
                 left,
                 value: _,
                 right: _,
@@ -318,8 +318,8 @@ impl<T> BST<T> {
     /// Helper function to get a reference to the node at the right end of the tree.
     fn right_end(&self) -> Option<&Self> {
         match self {
-            BST::Empty => None,
-            BST::Node {
+            Self::Empty => None,
+            Self::Node {
                 left: _,
                 value: _,
                 right,
@@ -344,8 +344,8 @@ impl<T> BST<T> {
     /// This is effectively `depth(left) - depth(right)`.
     fn balance_factor(&self) -> isize {
         match self {
-            BST::Empty => 0,
-            BST::Node {
+            Self::Empty => 0,
+            Self::Node {
                 left,
                 value: _,
                 right,
@@ -375,8 +375,8 @@ where
         T: Clone,
     {
         match self {
-            BST::Empty => BST::Empty,
-            BST::Node { left, value, right } => {
+            Self::Empty => Self::Empty,
+            Self::Node { left, value, right } => {
                 let left_clone = match &left {
                     None => None,
                     Some(left_tree) => Some(left_tree.clone()),
@@ -386,7 +386,7 @@ where
                     Some(right_tree) => Some(right_tree.clone()),
                 };
 
-                BST::Node {
+                Self::Node {
                     left: left_clone,
                     value: value.clone(),
                     right: right_clone,
@@ -402,14 +402,14 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (BST::Empty, BST::Empty) => true,
+            (Self::Empty, Self::Empty) => true,
             (
-                BST::Node {
+                Self::Node {
                     left: l1,
                     value: v1,
                     right: r1,
                 },
-                BST::Node {
+                Self::Node {
                     left: l2,
                     value: v2,
                     right: r2,
