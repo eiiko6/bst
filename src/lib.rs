@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::fmt::Display;
+use std::fmt;
 
 /// A binary search tree (BST) data structure.
 ///
@@ -22,11 +22,7 @@ impl<T> Default for BST<T> {
     }
 }
 
-impl<T> BST<T>
-where
-    // NOTE: temporary
-    T: Display,
-{
+impl<T> BST<T> {
     /// Creates an empty binary search tree.
     pub fn new() -> Self {
         Self::default()
@@ -240,27 +236,6 @@ where
         }
     }
 
-    pub fn display(&self, size: usize) {
-        match self {
-            BST::Empty => return,
-            BST::Node { left, value, right } => {
-                if let Some(tree) = &right {
-                    tree.display(size + 1);
-                }
-
-                for _ in 0..size {
-                    print!("---");
-                }
-
-                println!("{}", value);
-
-                if let Some(tree) = &left {
-                    tree.display(size + 1);
-                }
-            }
-        }
-    }
-
     /// Searches for a value in the tree.
     ///
     /// Returns a reference to the found value, or [`None`] if it doesn't exist.
@@ -395,8 +370,6 @@ where
 impl<T> PartialEq for BST<T>
 where
     T: PartialEq,
-    // NOTE: temporary
-    T: Display,
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -418,6 +391,42 @@ where
     }
 }
 
+impl<T> fmt::Debug for BST<T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn fmt_node<T: fmt::Debug>(
+            node: &BST<T>,
+            f: &mut fmt::Formatter<'_>,
+            depth: usize,
+        ) -> fmt::Result {
+            match node {
+                BST::Empty => Ok(()),
+                BST::Node { left, value, right } => {
+                    if let Some(right) = right {
+                        fmt_node(right, f, depth + 1)?;
+                    }
+
+                    for _ in 0..depth {
+                        write!(f, "---")?;
+                    }
+
+                    writeln!(f, "{:?}", value)?;
+
+                    if let Some(left) = left {
+                        fmt_node(left, f, depth + 1)?;
+                    }
+                    Ok(())
+                }
+            }
+        }
+
+        writeln!(f)?;
+        fmt_node(self, f, 0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -434,7 +443,7 @@ mod tests {
         tree.insert_unbalanced(10);
         tree.insert_unbalanced(9);
 
-        tree.display(tree.depth());
+        dbg!(&tree);
 
         assert_eq!(tree.count_nodes(), 7);
         assert_eq!(tree.depth(), 4);
@@ -450,7 +459,7 @@ mod tests {
         tree.insert_unbalanced(9);
         tree.insert_unbalanced(7);
 
-        tree.display(tree.depth());
+        dbg!(&tree);
 
         assert!(tree.contains(2));
         assert_eq!(tree.find(2).unwrap().value().unwrap(), &2);
@@ -469,10 +478,11 @@ mod tests {
         tree.insert_unbalanced(9);
         tree.insert_unbalanced(7);
 
-        tree.display(tree.depth());
+        dbg!(&tree);
 
         assert_eq!(tree.left_end().unwrap().value().unwrap(), &2);
         assert_eq!(tree.right_end().unwrap().value().unwrap(), &9);
+        assert!(false);
     }
 
     #[test]
