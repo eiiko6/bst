@@ -18,11 +18,7 @@ impl<T> Default for BST<T> {
     }
 }
 
-impl<T> BST<T>
-where
-    // NOTE: temporary
-    T: Display,
-{
+impl<T: Display> BST<T> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -183,32 +179,8 @@ where
     }
 }
 
-impl<T> Clone for BST<T>
-where
-    T: Clone,
-{
-    fn clone(&self) -> Self
-    where
-        T: Clone,
-    {
-        let left_clone = match &self.left {
-            None => None,
-            Some(left_tree) => Some(left_tree.clone()),
-        };
-        let right_clone = match &self.right {
-            None => None,
-            Some(right_tree) => Some(right_tree.clone()),
-        };
-
-        BST {
-            left: left_clone,
-            root: match &self.root {
-                None => None,
-                Some(value) => Some(value.clone()),
-            },
-            right: right_clone,
-        }
-    }
+impl Clone for BST<T> {
+    fn clone(&self) -> Self {}
 }
 
 #[cfg(test)]
