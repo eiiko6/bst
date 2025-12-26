@@ -116,3 +116,52 @@ fn test_balance_factor() {
 
     assert_eq!(tree.balance_factor(), 0);
 }
+
+#[test]
+fn test_rotate() {
+    //    1
+    //     \
+    //      3
+    //     / \
+    //    2   4
+    let mut tree = BST::new();
+    tree.insert_unbalanced(1);
+    tree.insert_unbalanced(3);
+    tree.insert_unbalanced(2);
+    tree.insert_unbalanced(4);
+
+    let tree2 = tree.clone();
+
+    dbg!(&tree);
+    tree.rotate_left();
+    dbg!(&tree);
+
+    // New root should be 3
+    assert_eq!(tree.value(), Some(&3));
+
+    // Left child of new root should be 1
+    let left = tree.left().expect("Left subtree should exist");
+    assert_eq!(left.value(), Some(&1));
+
+    // Right child of new root should be 4
+    let right = tree.right().expect("Right subtree should exist");
+    assert_eq!(right.value(), Some(&4));
+
+    // Left child of 1 should be None
+    assert!(left.left().is_none());
+
+    // Right child of 1 should be 2
+    let left_right = left.right().expect("Left-right subtree should exist");
+    assert_eq!(left_right.value(), Some(&2));
+
+    // Children of 2 and 4 should be None
+    assert!(left_right.left().is_none());
+    assert!(left_right.right().is_none());
+    assert!(right.left().is_none());
+    assert!(right.right().is_none());
+
+    dbg!(&tree);
+    tree.rotate_right();
+    dbg!(&tree);
+    assert_eq!(tree, tree2);
+}
