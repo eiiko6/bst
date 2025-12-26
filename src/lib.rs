@@ -2,8 +2,13 @@
 
 use std::fmt::Display;
 
+/// A binary search tree (BST) data structure.
+///
+/// NOTE: This implementation is unbalanced for now.
 pub enum BST<T> {
+    /// Represents an empty tree.
     Empty,
+    /// Represents a BST node containing a value and optional left and right subtrees.
     Node {
         left: Option<Box<BST<T>>>,
         value: T,
@@ -22,18 +27,53 @@ where
     // NOTE: temporary
     T: Display,
 {
+    /// Creates an empty binary search tree.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Checks if the tree is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let tree: BST<i32> = BST::new();
+    /// assert!(tree.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         matches!(self, BST::Empty)
     }
 
+    /// Clears the tree, removing all nodes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert_unbalanced(1);
+    /// tree.clear();
+    /// assert!(tree.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         *self = BST::Empty
     }
 
+    /// Returns a reference to the value of the current node, if the tree is not empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// assert!(tree.value().is_none());
+    /// tree.insert_unbalanced(10);
+    /// assert_eq!(tree.value(), Some(&10));
+    /// ```
     pub fn value(&self) -> Option<&T> {
         match self {
             BST::Empty => None,
@@ -45,6 +85,7 @@ where
         }
     }
 
+    /// Helper function to get a mutable reference to the left subtree of a node
     fn left(&mut self) -> Option<&mut Self> {
         match self {
             BST::Empty => None,
@@ -56,6 +97,7 @@ where
         }
     }
 
+    /// Helper function to get a mutable reference to the right subtree of a node
     fn right(&mut self) -> Option<&mut Self> {
         match self {
             BST::Empty => None,
@@ -67,6 +109,19 @@ where
         }
     }
 
+    /// Counts the number of nodes in the tree.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// assert_eq!(tree.count_nodes(), 0);
+    /// tree.insert_unbalanced(1);
+    /// tree.insert_unbalanced(2);
+    /// assert_eq!(tree.count_nodes(), 2);
+    /// ```
     pub fn count_nodes(&self) -> usize {
         match self {
             BST::Empty => 0,
@@ -88,6 +143,20 @@ where
         }
     }
 
+    /// Computes the depth/height of the tree, including the root node.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// assert_eq!(tree.depth(), 0);
+    /// tree.insert_unbalanced(1);
+    /// assert_eq!(tree.depth(), 1);
+    /// tree.insert_unbalanced(2);
+    /// assert_eq!(tree.depth(), 2);
+    /// ```
     pub fn depth(&self) -> usize {
         match self {
             BST::Empty => 0,
@@ -110,6 +179,23 @@ where
         }
     }
 
+    /// Inserts a value into the tree without balancing.
+    ///
+    /// If the value already exists, it will not be inserted again.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert_unbalanced(5);
+    /// tree.insert_unbalanced(3);
+    /// tree.insert_unbalanced(7);
+    /// assert!(tree.contains(5));
+    /// assert!(tree.contains(3));
+    /// assert!(tree.contains(7));
+    /// ```
     pub fn insert_unbalanced(&mut self, val: T) -> &mut Self
     where
         T: PartialEq + PartialOrd,
@@ -175,6 +261,21 @@ where
         }
     }
 
+    /// Searches for a value in the tree.
+    ///
+    /// Returns a reference to the found value, or [`None`] if it doesn't exist.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert_unbalanced(5);
+    /// tree.insert_unbalanced(3);
+    /// assert_eq!(tree.find(3).unwrap().value(), Some(&3));
+    /// assert!(tree.find(999).is_none());
+    /// ```
     pub fn find(&self, val: T) -> Option<&Self>
     where
         T: PartialEq + PartialOrd,
@@ -193,6 +294,18 @@ where
         }
     }
 
+    /// Checks if a value exists in the tree.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert_unbalanced(5);
+    /// assert!(tree.contains(5));
+    /// assert!(!tree.contains(10));
+    /// ```
     pub fn contains(&self, val: T) -> bool
     where
         T: PartialEq + PartialOrd,
@@ -200,6 +313,7 @@ where
         self.find(val).is_some()
     }
 
+    /// Helper function to get a reference to the node at the left end of the tree.
     fn left_end(&self) -> Option<&Self> {
         match self {
             BST::Empty => None,
@@ -223,6 +337,7 @@ where
         }
     }
 
+    /// Helper function to get a reference to the node at the right end of the tree.
     fn right_end(&self) -> Option<&Self> {
         match self {
             BST::Empty => None,
