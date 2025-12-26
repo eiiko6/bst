@@ -2,7 +2,7 @@ extern crate std;
 use crate::BST;
 
 #[test]
-fn test_unbalanced_insertion() {
+fn test_unbalanced_count_and_depth() {
     let mut tree = BST::new();
     tree.insert_unbalanced(5);
     tree.insert_unbalanced(8);
@@ -31,11 +31,11 @@ fn test_find() {
 
     dbg!(&tree);
 
-    assert!(tree.contains(2));
-    assert_eq!(tree.find(2).unwrap().value().unwrap(), &2);
-    assert_eq!(tree.find(7).unwrap().value().unwrap(), &7);
-    assert_eq!(tree.find(5).unwrap().value().unwrap(), &5);
-    assert!(tree.find(999).is_none());
+    assert!(tree.contains(&2));
+    assert_eq!(tree.find(&2).unwrap().root_value().unwrap(), &2);
+    assert_eq!(tree.find(&7).unwrap().root_value().unwrap(), &7);
+    assert_eq!(tree.find(&5).unwrap().root_value().unwrap(), &5);
+    assert!(tree.find(&999).is_none());
 }
 
 #[test]
@@ -50,8 +50,8 @@ fn test_ends() {
 
     dbg!(&tree);
 
-    assert_eq!(tree.left_end().unwrap().value().unwrap(), &2);
-    assert_eq!(tree.right_end().unwrap().value().unwrap(), &9);
+    assert_eq!(tree.left_end().unwrap().root_value().unwrap(), &2);
+    assert_eq!(tree.right_end().unwrap().root_value().unwrap(), &9);
 }
 
 #[test]
@@ -137,22 +137,22 @@ fn test_rotate() {
     dbg!(&tree);
 
     // New root should be 3
-    assert_eq!(tree.value(), Some(&3));
+    assert_eq!(tree.root_value(), Some(&3));
 
     // Left child of new root should be 1
     let left = tree.left().expect("Left subtree should exist");
-    assert_eq!(left.value(), Some(&1));
+    assert_eq!(left.root_value(), Some(&1));
 
     // Right child of new root should be 4
     let right = tree.right().expect("Right subtree should exist");
-    assert_eq!(right.value(), Some(&4));
+    assert_eq!(right.root_value(), Some(&4));
 
     // Left child of 1 should be None
     assert!(left.left().is_none());
 
     // Right child of 1 should be 2
     let left_right = left.right().expect("Left-right subtree should exist");
-    assert_eq!(left_right.value(), Some(&2));
+    assert_eq!(left_right.root_value(), Some(&2));
 
     // Children of 2 and 4 should be None
     assert!(left_right.left().is_none());
@@ -185,15 +185,15 @@ fn test_rotate_left_right() {
     dbg!(&tree);
 
     // Root should be 3
-    assert_eq!(tree.value(), Some(&3));
+    assert_eq!(tree.root_value(), Some(&3));
 
     // Left child of root should be 2
     let left = tree.left().expect("Left subtree should exist");
-    assert_eq!(left.value(), Some(&2));
+    assert_eq!(left.root_value(), Some(&2));
 
     // Right child of root should be 5
     let right = tree.right().expect("Right subtree should exist");
-    assert_eq!(right.value(), Some(&5));
+    assert_eq!(right.root_value(), Some(&5));
 }
 
 #[test]
@@ -215,20 +215,19 @@ fn test_rotate_right_left() {
     dbg!(&tree);
 
     // Root should be 3
-    assert_eq!(tree.value(), Some(&3));
+    assert_eq!(tree.root_value(), Some(&3));
 
     // Left child of root should be 2
     let left = tree.left().expect("Left subtree should exist");
-    assert_eq!(left.value(), Some(&2));
+    assert_eq!(left.root_value(), Some(&2));
 
     // Right child of root should be 5
     let right = tree.right().expect("Right subtree should exist");
-    assert_eq!(right.value(), Some(&5));
+    assert_eq!(right.root_value(), Some(&5));
 }
 
 #[test]
 fn test_rebalance() {
-    // Right rotation case (bf > 1, left-heavy)
     //      5
     //     /
     //    3
@@ -243,11 +242,10 @@ fn test_rebalance() {
     tree.rebalance();
     dbg!(&tree);
 
-    assert_eq!(tree.value(), Some(&3));
-    assert_eq!(tree.left().unwrap().value(), Some(&2));
-    assert_eq!(tree.right().unwrap().value(), Some(&5));
+    assert_eq!(tree.root_value(), Some(&3));
+    assert_eq!(tree.left().unwrap().root_value(), Some(&2));
+    assert_eq!(tree.right().unwrap().root_value(), Some(&5));
 
-    // Left rotation case (bf < -1, right-heavy)
     //      2
     //       \
     //        5
@@ -262,11 +260,10 @@ fn test_rebalance() {
     tree2.rebalance();
     dbg!(&tree2);
 
-    assert_eq!(tree2.value(), Some(&5));
-    assert_eq!(tree2.left().unwrap().value(), Some(&2));
-    assert_eq!(tree2.right().unwrap().value(), Some(&6));
+    assert_eq!(tree2.root_value(), Some(&5));
+    assert_eq!(tree2.left().unwrap().root_value(), Some(&2));
+    assert_eq!(tree2.right().unwrap().root_value(), Some(&6));
 
-    // Left-Right rotation case
     //      5
     //     /
     //    2
@@ -281,11 +278,10 @@ fn test_rebalance() {
     tree3.rebalance();
     dbg!(&tree3);
 
-    assert_eq!(tree3.value(), Some(&3));
-    assert_eq!(tree3.left().unwrap().value(), Some(&2));
-    assert_eq!(tree3.right().unwrap().value(), Some(&5));
+    assert_eq!(tree3.root_value(), Some(&3));
+    assert_eq!(tree3.left().unwrap().root_value(), Some(&2));
+    assert_eq!(tree3.right().unwrap().root_value(), Some(&5));
 
-    // Right-Left rotation case
     //      2
     //       \
     //        5
@@ -300,7 +296,7 @@ fn test_rebalance() {
     tree4.rebalance();
     dbg!(&tree4);
 
-    assert_eq!(tree4.value(), Some(&3));
-    assert_eq!(tree4.left().unwrap().value(), Some(&2));
-    assert_eq!(tree4.right().unwrap().value(), Some(&5));
+    assert_eq!(tree4.root_value(), Some(&3));
+    assert_eq!(tree4.left().unwrap().root_value(), Some(&2));
+    assert_eq!(tree4.right().unwrap().root_value(), Some(&5));
 }

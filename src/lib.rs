@@ -1,5 +1,4 @@
 #![cfg_attr(not(test), no_std)]
-#![allow(dead_code)]
 
 extern crate alloc;
 use alloc::boxed::Box;
@@ -53,7 +52,7 @@ impl<T> BST<T> {
     /// use bst::BST;
     ///
     /// let mut tree = BST::new();
-    /// tree.insert_unbalanced(1);
+    /// tree.insert(1);
     /// tree.clear();
     /// assert!(tree.is_empty());
     /// ```
@@ -61,7 +60,7 @@ impl<T> BST<T> {
         *self = Self::Empty
     }
 
-    /// Returns a reference to the value of the current node, if the tree is not empty.
+    /// Returns a reference to the value of the root node, if the tree is not empty.
     ///
     /// # Examples
     ///
@@ -69,11 +68,11 @@ impl<T> BST<T> {
     /// use bst::BST;
     ///
     /// let mut tree = BST::new();
-    /// assert!(tree.value().is_none());
-    /// tree.insert_unbalanced(10);
-    /// assert_eq!(tree.value(), Some(&10));
+    /// assert!(tree.root_value().is_none());
+    /// tree.insert(10);
+    /// assert_eq!(tree.root_value(), Some(&10));
     /// ```
-    pub fn value(&self) -> Option<&T> {
+    pub fn root_value(&self) -> Option<&T> {
         match self {
             Self::Empty => None,
             Self::Node { value, .. } => Some(value),
@@ -89,8 +88,8 @@ impl<T> BST<T> {
     ///
     /// let mut tree = BST::new();
     /// assert_eq!(tree.count_nodes(), 0);
-    /// tree.insert_unbalanced(1);
-    /// tree.insert_unbalanced(2);
+    /// tree.insert(1);
+    /// tree.insert(2);
     /// assert_eq!(tree.count_nodes(), 2);
     /// ```
     pub fn count_nodes(&self) -> usize {
@@ -119,9 +118,9 @@ impl<T> BST<T> {
     ///
     /// let mut tree = BST::new();
     /// assert_eq!(tree.depth(), 0);
-    /// tree.insert_unbalanced(1);
+    /// tree.insert(1);
     /// assert_eq!(tree.depth(), 1);
-    /// tree.insert_unbalanced(2);
+    /// tree.insert(2);
     /// assert_eq!(tree.depth(), 2);
     /// ```
     pub fn depth(&self) -> usize {
@@ -145,23 +144,9 @@ impl<T> BST<T> {
     /// Inserts a value into the tree without balancing.
     ///
     /// If the value already exists, it will not be inserted again.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bst::BST;
-    ///
-    /// let mut tree = BST::new();
-    /// tree.insert_unbalanced(5);
-    /// tree.insert_unbalanced(3);
-    /// tree.insert_unbalanced(7);
-    /// assert!(tree.contains(5));
-    /// assert!(tree.contains(3));
-    /// assert!(tree.contains(7));
-    /// ```
-    pub fn insert_unbalanced(&mut self, val: T) -> &mut Self
+    fn insert_unbalanced(&mut self, val: T) -> &mut Self
     where
-        T: PartialEq + PartialOrd,
+        T: PartialEq + Ord,
     {
         match self {
             Self::Empty => {
@@ -213,21 +198,21 @@ impl<T> BST<T> {
     /// use bst::BST;
     ///
     /// let mut tree = BST::new();
-    /// tree.insert_unbalanced(5);
-    /// tree.insert_unbalanced(3);
-    /// assert_eq!(tree.find(3).unwrap().value(), Some(&3));
-    /// assert!(tree.find(999).is_none());
+    /// tree.insert(5);
+    /// tree.insert(3);
+    /// assert_eq!(tree.find(&3).unwrap().root_value(), Some(&3));
+    /// assert!(tree.find(&999).is_none());
     /// ```
-    pub fn find(&self, val: T) -> Option<&Self>
+    pub fn find(&self, val: &T) -> Option<&Self>
     where
-        T: PartialEq + PartialOrd,
+        T: PartialEq + Ord,
     {
         match self {
             Self::Empty => None,
             Self::Node { left, value, right } => {
-                if *value == val {
+                if value == val {
                     return Some(self);
-                } else if val < *value {
+                } else if val < value {
                     return left.as_deref()?.find(val);
                 } else {
                     right.as_deref()?.find(val)
@@ -244,26 +229,19 @@ impl<T> BST<T> {
     /// use bst::BST;
     ///
     /// let mut tree = BST::new();
-    /// tree.insert_unbalanced(5);
-    /// assert!(tree.contains(5));
-    /// assert!(!tree.contains(10));
+    /// tree.insert(5);
+    /// assert!(tree.contains(&5));
+    /// assert!(!tree.contains(&10));
     /// ```
-    pub fn contains(&self, val: T) -> bool
+    pub fn contains(&self, val: &T) -> bool
     where
-        T: PartialEq + PartialOrd,
+        T: PartialEq + Ord,
     {
         self.find(val).is_some()
     }
 
-    /// Helper function to get a mutable reference to the left subtree of a node
-    fn left_mut(&mut self) -> Option<&mut Self> {
-        match self {
-            Self::Empty => None,
-            Self::Node { left, .. } => left.as_deref_mut(),
-        }
-    }
-
     /// Helper function to get a reference to the left subtree of a node
+    #[cfg(test)]
     fn left(&self) -> Option<&Self> {
         match self {
             Self::Empty => None,
@@ -271,15 +249,8 @@ impl<T> BST<T> {
         }
     }
 
-    /// Helper function to get a mutable reference to the right subtree of a node
-    fn right_mut(&mut self) -> Option<&mut Self> {
-        match self {
-            Self::Empty => None,
-            Self::Node { right, .. } => right.as_deref_mut(),
-        }
-    }
-
     /// Helper function to get a reference to the right subtree of a node
+    #[cfg(test)]
     fn right(&self) -> Option<&Self> {
         match self {
             Self::Empty => None,
@@ -288,42 +259,22 @@ impl<T> BST<T> {
     }
 
     /// Helper function to get a reference to the node at the left end of the tree.
+    #[cfg(test)]
     fn left_end(&self) -> Option<&Self> {
         match self {
-            Self::Empty => None,
-            Self::Node { left, .. } => {
-                if left.is_none() {
-                    match &left {
-                        None => Some(self),
-                        Some(node) => Some(&node),
-                    }
-                } else {
-                    match &left {
-                        None => Some(self),
-                        Some(node) => node.left_end(),
-                    }
-                }
-            }
+            BST::Node { left: Some(l), .. } => l.left_end(),
+            BST::Node { .. } => Some(self),
+            BST::Empty => None,
         }
     }
 
     /// Helper function to get a reference to the node at the right end of the tree.
+    #[cfg(test)]
     fn right_end(&self) -> Option<&Self> {
         match self {
-            Self::Empty => None,
-            Self::Node { right, .. } => {
-                if right.is_none() {
-                    match &right {
-                        None => Some(self),
-                        Some(node) => Some(&node),
-                    }
-                } else {
-                    match &right {
-                        None => Some(self),
-                        Some(node) => node.right_end(),
-                    }
-                }
-            }
+            BST::Node { right: Some(l), .. } => l.right_end(),
+            BST::Node { .. } => Some(self),
+            BST::Empty => None,
         }
     }
 
@@ -355,70 +306,84 @@ impl<T> BST<T> {
 
     /// Helper function to rotate the tree left.
     fn rotate_left(&mut self) {
-        if let Self::Node { right, .. } = self {
-            let right_node = match core::mem::replace(right, None) {
-                Some(boxed) => *boxed,
-                None => return,
-            };
-
-            if let Self::Node {
-                value: right_value,
-                left: right_left,
-                right: right_right,
-            } = right_node
-            {
-                // Replace self temporarily
-                if let Self::Node { value, left, .. } = core::mem::replace(self, Self::Empty) {
-                    // Build new left node (old root)
-                    let new_left = Self::Node {
-                        value,
-                        left,
-                        right: right_left,
-                    };
-
-                    // Reassign self as new root
-                    *self = Self::Node {
-                        value: right_value,
-                        left: Some(Box::new(new_left)),
-                        right: right_right,
-                    };
-                }
+        let (value, left, right) = match core::mem::take(self) {
+            Self::Node {
+                value,
+                left,
+                right: Some(r),
+            } => (value, left, r),
+            other => {
+                *self = other;
+                return;
             }
-        }
+        };
+
+        let Self::Node {
+            value: r_value,
+            left: r_left,
+            right: r_right,
+        } = *right
+        else {
+            *self = Self::Node {
+                value,
+                left,
+                right: Some(right),
+            };
+            return;
+        };
+
+        let new_left = Self::Node {
+            value,
+            left,
+            right: r_left,
+        };
+
+        *self = Self::Node {
+            value: r_value,
+            left: Some(Box::new(new_left)),
+            right: r_right,
+        };
     }
 
     /// Helper function to rotate the tree right.
     fn rotate_right(&mut self) {
-        if let Self::Node { left, .. } = self {
-            let left_node = match core::mem::replace(left, None) {
-                Some(boxed) => *boxed,
-                None => return,
-            };
-
-            if let Self::Node {
-                value: left_value,
-                right: left_right,
-                left: left_left,
-            } = left_node
-            {
-                // Replace self temporarily
-                if let Self::Node { value, right, .. } = core::mem::replace(self, Self::Empty) {
-                    // Build new right node (old root)
-                    let new_right = Self::Node {
-                        value,
-                        right,
-                        left: left_right,
-                    };
-
-                    // Reassign self as new root
-                    *self = Self::Node {
-                        value: left_value,
-                        right: Some(Box::new(new_right)),
-                        left: left_left,
-                    };
-                }
+        let (value, right, left) = match core::mem::take(self) {
+            Self::Node {
+                value,
+                left: Some(l),
+                right,
+            } => (value, right, l),
+            other => {
+                *self = other;
+                return;
             }
-        }
+        };
+
+        let Self::Node {
+            value: l_value,
+            left: l_left,
+            right: l_right,
+        } = *left
+        else {
+            *self = Self::Node {
+                value,
+                left: Some(left),
+                right,
+            };
+            return;
+        };
+
+        let new_right = Self::Node {
+            value,
+            left: l_right,
+            right,
+        };
+
+        *self = Self::Node {
+            value: l_value,
+            left: l_left,
+            right: Some(Box::new(new_right)),
+        };
     }
 
     /// Helper function to rotate the left subtree left, and then the whole tree right.
@@ -488,13 +453,13 @@ impl<T> BST<T> {
     /// tree.insert(5);
     /// tree.insert(3);
     /// tree.insert(7);
-    /// assert!(tree.contains(5));
-    /// assert!(tree.contains(3));
-    /// assert!(tree.contains(7));
+    /// assert!(tree.contains(&5));
+    /// assert!(tree.contains(&3));
+    /// assert!(tree.contains(&7));
     /// ```
     pub fn insert(&mut self, val: T)
     where
-        T: PartialOrd,
+        T: Ord,
     {
         self.insert_unbalanced(val);
         self.rebalance();
@@ -559,10 +524,10 @@ impl<T> fmt::Debug for BST<T>
 where
     T: fmt::Debug,
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fn fmt_node<T: fmt::Debug>(
             node: &BST<T>,
-            f: &mut fmt::Formatter<'_>,
+            f: &mut fmt::Formatter,
             depth: usize,
         ) -> fmt::Result {
             match node {
