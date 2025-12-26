@@ -1,6 +1,9 @@
+#![cfg_attr(not(test), no_std)]
 #![allow(dead_code)]
 
-use std::fmt;
+extern crate alloc;
+use alloc::boxed::Box;
+use core::fmt;
 
 /// A binary search tree (BST) data structure.
 ///
@@ -78,30 +81,6 @@ impl<T> BST<T> {
                 value,
                 right: _,
             } => Some(value),
-        }
-    }
-
-    /// Helper function to get a mutable reference to the left subtree of a node
-    fn left(&mut self) -> Option<&mut Self> {
-        match self {
-            BST::Empty => None,
-            BST::Node {
-                left,
-                value: _,
-                right: _,
-            } => left.as_deref_mut(),
-        }
-    }
-
-    /// Helper function to get a mutable reference to the right subtree of a node
-    fn right(&mut self) -> Option<&mut Self> {
-        match self {
-            BST::Empty => None,
-            BST::Node {
-                left: _,
-                value: _,
-                right,
-            } => right.as_deref_mut(),
         }
     }
 
@@ -288,6 +267,30 @@ impl<T> BST<T> {
         self.find(val).is_some()
     }
 
+    /// Helper function to get a mutable reference to the left subtree of a node
+    fn left(&mut self) -> Option<&mut Self> {
+        match self {
+            BST::Empty => None,
+            BST::Node {
+                left,
+                value: _,
+                right: _,
+            } => left.as_deref_mut(),
+        }
+    }
+
+    /// Helper function to get a mutable reference to the right subtree of a node
+    fn right(&mut self) -> Option<&mut Self> {
+        match self {
+            BST::Empty => None,
+            BST::Node {
+                left: _,
+                value: _,
+                right,
+            } => right.as_deref_mut(),
+        }
+    }
+
     /// Helper function to get a reference to the node at the left end of the tree.
     fn left_end(&self) -> Option<&Self> {
         match self {
@@ -332,6 +335,32 @@ impl<T> BST<T> {
                         Some(node) => node.right_end(),
                     }
                 }
+            }
+        }
+    }
+
+    /// Helper function to get the balance factor of the tree.
+    ///
+    /// This is effectively `depth(left) - depth(right)`.
+    fn balance_factor(&self) -> isize {
+        match self {
+            BST::Empty => 0,
+            BST::Node {
+                left,
+                value: _,
+                right,
+            } => {
+                let left_depth = match left {
+                    None => 0,
+                    Some(left_tree) => left_tree.depth(),
+                };
+                let right_depth = match right {
+                    None => 0,
+                    Some(right_tree) => right_tree.depth(),
+                };
+
+                // FIX: probably bad idea
+                left_depth as isize - right_depth as isize
             }
         }
     }
@@ -428,98 +457,4 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_unbalanced_insertion() {
-        let mut tree = BST::new();
-        tree.insert_unbalanced(5);
-        tree.insert_unbalanced(8);
-        tree.insert_unbalanced(3);
-        tree.insert_unbalanced(2);
-        tree.insert_unbalanced(6);
-        tree.insert_unbalanced(9);
-        tree.insert_unbalanced(10);
-        tree.insert_unbalanced(9);
-
-        dbg!(&tree);
-
-        assert_eq!(tree.count_nodes(), 7);
-        assert_eq!(tree.depth(), 4);
-    }
-
-    #[test]
-    fn test_find() {
-        let mut tree = BST::new();
-        tree.insert_unbalanced(5);
-        tree.insert_unbalanced(8);
-        tree.insert_unbalanced(3);
-        tree.insert_unbalanced(2);
-        tree.insert_unbalanced(9);
-        tree.insert_unbalanced(7);
-
-        dbg!(&tree);
-
-        assert!(tree.contains(2));
-        assert_eq!(tree.find(2).unwrap().value().unwrap(), &2);
-        assert_eq!(tree.find(7).unwrap().value().unwrap(), &7);
-        assert_eq!(tree.find(5).unwrap().value().unwrap(), &5);
-        assert!(tree.find(999).is_none());
-    }
-
-    #[test]
-    fn test_ends() {
-        let mut tree = BST::new();
-        tree.insert_unbalanced(5);
-        tree.insert_unbalanced(8);
-        tree.insert_unbalanced(3);
-        tree.insert_unbalanced(2);
-        tree.insert_unbalanced(9);
-        tree.insert_unbalanced(7);
-
-        dbg!(&tree);
-
-        assert_eq!(tree.left_end().unwrap().value().unwrap(), &2);
-        assert_eq!(tree.right_end().unwrap().value().unwrap(), &9);
-        assert!(false);
-    }
-
-    #[test]
-    fn test_equals() {
-        let mut tree1 = BST::new();
-        tree1.insert_unbalanced(5);
-        tree1.insert_unbalanced(8);
-        tree1.insert_unbalanced(3);
-        tree1.insert_unbalanced(2);
-        tree1.insert_unbalanced(9);
-        tree1.insert_unbalanced(7);
-
-        let mut tree2 = BST::new();
-        tree2.insert_unbalanced(5);
-        tree2.insert_unbalanced(8);
-        tree2.insert_unbalanced(3);
-        tree2.insert_unbalanced(2);
-        tree2.insert_unbalanced(9);
-        tree2.insert_unbalanced(7);
-
-        assert!(tree1 == tree2);
-        tree2.insert_unbalanced(10);
-        assert!(tree1 != tree2);
-    }
-
-    #[test]
-    fn test_clone_equals() {
-        let mut tree1 = BST::new();
-        tree1.insert_unbalanced(5);
-        tree1.insert_unbalanced(8);
-        tree1.insert_unbalanced(3);
-        tree1.insert_unbalanced(2);
-        tree1.insert_unbalanced(9);
-        tree1.insert_unbalanced(7);
-
-        let tree2 = tree1.clone();
-
-        assert!(tree1 == tree2);
-    }
-}
+mod tests;
