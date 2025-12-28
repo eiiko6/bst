@@ -281,7 +281,7 @@ impl<T> BST<T> {
     /// Helper function to get the balance factor of the tree.
     ///
     /// This is effectively `depth(left) - depth(right)`.
-    fn balance_factor(&self) -> isize {
+    pub fn balance_factor(&self) -> isize {
         match self {
             Self::Empty => 0,
             Self::Node {
@@ -413,27 +413,32 @@ impl<T> BST<T> {
     }
 
     /// Rebalances the whole tree after it has a `|balance_factor|` of 1 or more.
+    // FIX: slower than it needs to be: height/depth should be stored or something
     fn rebalance(&mut self) {
-        let bf = self.balance_factor();
+        loop {
+            let bf = self.balance_factor();
 
-        match self {
-            Self::Empty => return,
-            Self::Node { left, right, .. } => {
-                if bf > 1 {
-                    if let Some(left) = left {
-                        if left.balance_factor() >= 0 {
-                            self.rotate_right();
-                        } else {
-                            self.rotate_left_right();
+            match self {
+                Self::Empty => return,
+                Self::Node { left, right, .. } => {
+                    if bf > 1 {
+                        if let Some(left) = left {
+                            if left.balance_factor() >= 0 {
+                                self.rotate_right();
+                            } else {
+                                self.rotate_left_right();
+                            }
                         }
-                    }
-                } else if bf < -1 {
-                    if let Some(right) = right {
-                        if right.balance_factor() <= 0 {
-                            self.rotate_left();
-                        } else {
-                            self.rotate_right_left();
+                    } else if bf < -1 {
+                        if let Some(right) = right {
+                            if right.balance_factor() <= 0 {
+                                self.rotate_left();
+                            } else {
+                                self.rotate_right_left();
+                            }
                         }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -462,6 +467,90 @@ impl<T> BST<T> {
         T: Ord,
     {
         self.insert_unbalanced(val);
+        self.rebalance();
+    }
+
+    // Helper function to take ownership of the largest value in the tree.
+    fn take_max(&mut self) -> Option<T> {
+        match self {
+            Self::Empty => None,
+            Self::Node { right: Some(r), .. } => r.take_max(),
+            Self::Node {
+                left, right: None, ..
+            } => {
+                // This node is the max
+                let left_subtree = left.take();
+                let value = match core::mem::replace(
+                    self,
+                    match left_subtree {
+                        Some(left_tree) => *left_tree,
+                        None => Self::Empty,
+                    },
+                ) {
+                    Self::Node { value, .. } => value,
+                    _ => unreachable!(),
+                };
+                Some(value)
+            }
+        }
+    }
+
+    /// Remove a value from the tree.
+    ///
+    /// FIX: Sometimes this doesn't remove the value. Because of that, this function isn't usable.
+    pub fn remove(&mut self, val: &T)
+    where
+        T: Ord,
+    {
+        match self {
+            Self::Node {
+                left: None,
+                value,
+                right: None,
+            } if value == val => {
+                *self = Self::Empty;
+            }
+            Self::Node {
+                left: None,
+                value,
+                right,
+            } if value == val => {
+                if let Some(right) = right.take() {
+                    *self = *right;
+                }
+            }
+            Self::Node {
+                left,
+                value,
+                right: None,
+            } if value == val => {
+                if let Some(left) = left.take() {
+                    *self = *left;
+                }
+            }
+            Self::Node { left, value, .. } if value == val => {
+                // Two children: find max in left subtree
+                if let Some(left) = left {
+                    if let Some(max) = left.take_max() {
+                        *value = max;
+                        left.rebalance();
+                    }
+                }
+            }
+            Self::Node { left, value, right } => {
+                if val < value {
+                    if let Some(left) = left {
+                        left.remove(val);
+                    }
+                } else if val > value {
+                    if let Some(right) = right {
+                        right.remove(val);
+                    }
+                }
+            }
+            Self::Empty => return,
+        }
+
         self.rebalance();
     }
 }
@@ -541,7 +630,7 @@ where
                         write!(f, "---")?;
                     }
 
-                    writeln!(f, "{:?}", value)?;
+                    writeln!(f, " {:?}", value)?;
 
                     if let Some(left) = left {
                         fmt_node(left, f, depth + 1)?;

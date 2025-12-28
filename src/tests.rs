@@ -1,4 +1,5 @@
 extern crate std;
+
 use crate::BST;
 
 #[test]
@@ -299,4 +300,56 @@ fn test_rebalance() {
     assert_eq!(tree4.root_value(), Some(&3));
     assert_eq!(tree4.left().unwrap().root_value(), Some(&2));
     assert_eq!(tree4.right().unwrap().root_value(), Some(&5));
+}
+
+// FIX: Right now this fails.
+#[test]
+fn test_remove() {
+    let mut tree = BST::new();
+
+    for val in [10, 5, 15, 2, 7, 12, 18, 1] {
+        tree.insert(val);
+        dbg!(&tree);
+    }
+
+    let mut initial_count = tree.count_nodes();
+
+    println!("removing 18");
+    tree.remove(&18);
+    dbg!(&tree);
+    let count = tree.count_nodes();
+    initial_count -= 1;
+    assert_eq!(
+        count, initial_count,
+        "Tree is of size {} but should be {}",
+        count, initial_count
+    );
+    let bf = tree.balance_factor();
+    assert!(bf.abs() <= 1, "Tree is unbalanced: bf = {}", bf);
+
+    println!("removing 12");
+    tree.remove(&12);
+    dbg!(&tree);
+    let count = tree.count_nodes();
+    initial_count -= 1;
+    assert_eq!(
+        count, initial_count,
+        "Tree is of size {} but should be {}",
+        count, initial_count
+    );
+    let bf = tree.balance_factor();
+    assert!(bf.abs() <= 1, "Tree is unbalanced: bf = {}", bf);
+
+    println!("removing 15");
+    tree.remove(&15);
+    dbg!(&tree);
+    let count = tree.count_nodes();
+    initial_count -= 1;
+    assert_eq!(
+        count, initial_count,
+        "Tree is of size {} but should be {}",
+        count, initial_count
+    );
+    let bf = tree.balance_factor();
+    assert!(bf.abs() <= 1, "Tree is unbalanced: bf = {}", bf);
 }
