@@ -10,9 +10,9 @@ pub enum BST<T> {
     Empty,
     /// Represents a BST node containing a value and optional left and right subtrees.
     Node {
-        left: Option<Box<BST<T>>>,
+        left: Box<BST<T>>,
         value: T,
-        right: Option<Box<BST<T>>>,
+        right: Box<BST<T>>,
     },
 }
 
@@ -94,14 +94,8 @@ impl<T> BST<T> {
         match self {
             Self::Empty => 0,
             Self::Node { left, right, .. } => {
-                let left_count = match &left {
-                    Some(node) => node.count_nodes(),
-                    None => 0,
-                };
-                let right_count = match &right {
-                    Some(node) => node.count_nodes(),
-                    None => 0,
-                };
+                let left_count = left.count_nodes();
+                let right_count = right.count_nodes();
                 1 + left_count + right_count
             }
         }
@@ -125,14 +119,8 @@ impl<T> BST<T> {
         match self {
             Self::Empty => 0,
             Self::Node { left, right, .. } => {
-                let left_depth = match &left {
-                    Some(node) => node.depth(),
-                    None => 0,
-                };
-                let right_depth = match &right {
-                    Some(node) => node.depth(),
-                    None => 0,
-                };
+                let left_depth = left.depth();
+                let right_depth = right.depth();
 
                 1 + left_depth.max(right_depth)
             }
@@ -149,9 +137,9 @@ impl<T> BST<T> {
         match self {
             Self::Empty => {
                 *self = Self::Node {
-                    left: None,
+                    left: Box::new(Self::Empty),
                     value: val,
-                    right: None,
+                    right: Box::new(Self::Empty),
                 };
                 return self;
             }
@@ -160,26 +148,10 @@ impl<T> BST<T> {
                     return self;
                 }
                 if val < *value {
-                    if let Some(left_node) = left.as_deref_mut() {
-                        left_node.insert_unbalanced(val);
-                    } else {
-                        *left = Some(Box::new(Self::Node {
-                            left: None,
-                            value: val,
-                            right: None,
-                        }))
-                    }
+                    left.insert_unbalanced(val);
                     return self;
                 } else {
-                    if let Some(right_node) = right.as_deref_mut() {
-                        right_node.insert_unbalanced(val);
-                    } else {
-                        *right = Some(Box::new(Self::Node {
-                            left: None,
-                            value: val,
-                            right: None,
-                        }))
-                    }
+                    right.insert_unbalanced(val);
                     return self;
                 }
             }
@@ -211,9 +183,9 @@ impl<T> BST<T> {
                 if value == val {
                     return Some(self);
                 } else if val < value {
-                    return left.as_deref()?.find(val);
+                    return left.find(val);
                 } else {
-                    right.as_deref()?.find(val)
+                    right.find(val)
                 }
             }
         }
@@ -242,8 +214,8 @@ impl<T> BST<T> {
     #[cfg(test)]
     fn left(&self) -> Option<&Self> {
         match self {
-            Self::Empty => None,
-            Self::Node { left, .. } => left.as_deref(),
+            Self::Node { left, .. } if !left.is_empty() => Some(left),
+            _ => None,
         }
     }
 
@@ -251,8 +223,8 @@ impl<T> BST<T> {
     #[cfg(test)]
     fn right(&self) -> Option<&Self> {
         match self {
-            Self::Empty => None,
-            Self::Node { right, .. } => right.as_deref(),
+            Self::Node { right, .. } if !right.is_empty() => Some(right),
+            _ => None,
         }
     }
 
@@ -260,7 +232,7 @@ impl<T> BST<T> {
     #[cfg(test)]
     fn left_end(&self) -> Option<&Self> {
         match self {
-            BST::Node { left: Some(l), .. } => l.left_end(),
+            BST::Node { left, .. } if !left.is_empty() => left.left_end(),
             BST::Node { .. } => Some(self),
             BST::Empty => None,
         }
@@ -270,7 +242,7 @@ impl<T> BST<T> {
     #[cfg(test)]
     fn right_end(&self) -> Option<&Self> {
         match self {
-            BST::Node { right: Some(l), .. } => l.right_end(),
+            BST::Node { right, .. } if !right.is_empty() => right.right_end(),
             BST::Node { .. } => Some(self),
             BST::Empty => None,
         }
@@ -287,14 +259,8 @@ impl<T> BST<T> {
                 value: _,
                 right,
             } => {
-                let left_depth = match left {
-                    None => 0,
-                    Some(left_tree) => left_tree.depth(),
-                };
-                let right_depth = match right {
-                    None => 0,
-                    Some(right_tree) => right_tree.depth(),
-                };
+                let left_depth = left.depth();
+                let right_depth = right.depth();
 
                 // FIX: probably bad idea
                 left_depth as isize - right_depth as isize
@@ -305,83 +271,71 @@ impl<T> BST<T> {
     /// Helper function to rotate the tree left.
     fn rotate_left(&mut self) {
         let (value, left, right) = match core::mem::take(self) {
-            Self::Node {
-                value,
-                left,
-                right: Some(r),
-            } => (value, left, r),
+            Self::Node { value, left, right } /* if !right.is_empty() */ => (value, left, right),
             other => {
                 *self = other;
                 return;
             }
         };
 
-        let Self::Node {
-            value: r_value,
-            left: r_left,
-            right: r_right,
-        } = *right
-        else {
-            *self = Self::Node {
-                value,
-                left,
-                right: Some(right),
-            };
-            return;
-        };
+        match *right {
+            Self::Node {
+                value: r_value,
+                left: r_left,
+                right: r_right,
+            } => {
+                let new_left = Self::Node {
+                    value,
+                    left,
+                    right: r_left,
+                };
 
-        let new_left = Self::Node {
-            value,
-            left,
-            right: r_left,
-        };
-
-        *self = Self::Node {
-            value: r_value,
-            left: Some(Box::new(new_left)),
-            right: r_right,
-        };
+                *self = Self::Node {
+                    value: r_value,
+                    left: Box::new(new_left),
+                    right: r_right,
+                };
+            }
+            Self::Empty => {
+                // Cannot rotate, put back
+                *self = Self::Node { value, left, right };
+            }
+        }
     }
 
     /// Helper function to rotate the tree right.
     fn rotate_right(&mut self) {
         let (value, right, left) = match core::mem::take(self) {
-            Self::Node {
-                value,
-                left: Some(l),
-                right,
-            } => (value, right, l),
+            Self::Node { value, left, right } /* if !left.is_empty() */ => (value, right, left),
             other => {
                 *self = other;
                 return;
             }
         };
 
-        let Self::Node {
-            value: l_value,
-            left: l_left,
-            right: l_right,
-        } = *left
-        else {
-            *self = Self::Node {
-                value,
-                left: Some(left),
-                right,
-            };
-            return;
-        };
+        match *left {
+            Self::Node {
+                value: l_value,
+                left: l_left,
+                right: l_right,
+            } => {
+                let new_right = Self::Node {
+                    value,
+                    left: l_right,
+                    right,
+                };
 
-        let new_right = Self::Node {
-            value,
-            left: l_right,
-            right,
-        };
-
-        *self = Self::Node {
-            value: l_value,
-            left: l_left,
-            right: Some(Box::new(new_right)),
-        };
+                *self = Self::Node {
+                    value: l_value,
+                    left: l_left,
+                    right: Box::new(new_right),
+                };
+            }
+            Self::Empty => {
+                // Cannot rotate, put back
+                *self = Self::Node { value, left, right };
+            }
+        }
     }
 
     /// Helper function to rotate the left subtree left, and then the whole tree right.
@@ -389,7 +343,7 @@ impl<T> BST<T> {
         match self {
             Self::Empty => return,
             Self::Node { left, .. } => {
-                if let Some(left) = left {
+                if !left.is_empty() {
                     left.rotate_left();
                     self.rotate_right();
                 }
@@ -402,7 +356,7 @@ impl<T> BST<T> {
         match self {
             Self::Empty => return,
             Self::Node { right, .. } => {
-                if let Some(right) = right {
+                if !right.is_empty() {
                     right.rotate_right();
                     self.rotate_left();
                 }
@@ -420,7 +374,7 @@ impl<T> BST<T> {
                 Self::Empty => return,
                 Self::Node { left, right, .. } => {
                     if bf > 1 {
-                        if let Some(left) = left {
+                        if !left.is_empty() {
                             if left.balance_factor() >= 0 {
                                 self.rotate_right();
                             } else {
@@ -428,7 +382,7 @@ impl<T> BST<T> {
                             }
                         }
                     } else if bf < -1 {
-                        if let Some(right) = right {
+                        if !right.is_empty() {
                             if right.balance_factor() <= 0 {
                                 self.rotate_left();
                             } else {
@@ -472,27 +426,13 @@ impl<T> BST<T> {
     fn take_max(&mut self) -> Option<T> {
         match self {
             Self::Empty => None,
-            Self::Node { right: Some(r), .. } => {
-                let val = r.take_max();
-                if r.is_empty() {
-                    match self {
-                        Self::Node { right, .. } => *right = None,
-                        _ => unreachable!(),
-                    }
-                }
-                val
-            }
+            Self::Node { right, .. } if !right.is_empty() => right.take_max(),
             // This node is the max
-            Self::Node { left: _, .. } => {
+            Self::Node { .. } => {
                 let old_self = core::mem::take(self);
-                if let Self::Node {
-                    value, mut left, ..
-                } = old_self
-                {
-                    // If this node had a left child, move it up to this position
-                    if let Some(l) = left.take() {
-                        *self = *l;
-                    }
+                if let Self::Node { value, left, .. } = old_self {
+                    // Replace this node with its left child
+                    *self = *left;
                     Some(value)
                 } else {
                     unreachable!()
@@ -524,67 +464,26 @@ impl<T> BST<T> {
         T: Ord,
     {
         match self {
-            // Leaf
-            Self::Node {
-                left: None,
-                value,
-                right: None,
-            } if value == val => {
-                *self = Self::Empty;
-            }
-            // Only Right child
-            Self::Node {
-                left: None,
-                value,
-                right,
-            } if value == val => {
-                if let Some(r) = right.take() {
-                    *self = *r;
-                }
-            }
-            // Only Left child
-            Self::Node {
-                left,
-                value,
-                right: None,
-            } if value == val => {
-                if let Some(l) = left.take() {
-                    *self = *l;
-                }
-            }
-            // Two children
-            Self::Node { left, value, .. } if value == val => {
-                if let Some(l) = left {
-                    if let Some(max) = l.take_max() {
-                        *value = max;
-                        if l.is_empty() {
-                            match self {
-                                Self::Node { left, .. } => *left = None,
-                                _ => unreachable!(),
-                            }
-                        }
-                    }
-                }
-            }
-            // Node not found
-            Self::Node { left, value, right } => {
-                if val < value {
-                    if let Some(l) = left {
-                        l.remove(val);
-                        if l.is_empty() {
-                            *left = None;
-                        }
-                    }
-                } else {
-                    if let Some(r) = right {
-                        r.remove(val);
-                        if r.is_empty() {
-                            *right = None;
-                        }
-                    }
-                }
-            }
             Self::Empty => return,
+            Self::Node { left, value, right } => {
+                if *val < *value {
+                    left.remove(val);
+                } else if *val > *value {
+                    right.remove(val);
+                } else {
+                    // Node found
+                    if left.is_empty() {
+                        *self = *core::mem::take(right);
+                    } else if right.is_empty() {
+                        *self = *core::mem::take(left);
+                    } else {
+                        // Two children
+                        if let Some(max) = left.take_max() {
+                            *value = max;
+                        }
+                    }
+                }
+            }
         }
 
         self.rebalance();
@@ -601,22 +500,11 @@ where
     {
         match self {
             Self::Empty => Self::Empty,
-            Self::Node { left, value, right } => {
-                let left_clone = match &left {
-                    None => None,
-                    Some(left_tree) => Some(left_tree.clone()),
-                };
-                let right_clone = match &right {
-                    None => None,
-                    Some(right_tree) => Some(right_tree.clone()),
-                };
-
-                Self::Node {
-                    left: left_clone,
-                    value: value.clone(),
-                    right: right_clone,
-                }
-            }
+            Self::Node { left, value, right } => Self::Node {
+                left: left.clone(),
+                value: value.clone(),
+                right: right.clone(),
+            },
         }
     }
 }
@@ -658,9 +546,7 @@ where
             match node {
                 BST::Empty => Ok(()),
                 BST::Node { left, value, right } => {
-                    if let Some(right) = right {
-                        fmt_node(right, f, depth + 1)?;
-                    }
+                    fmt_node(right, f, depth + 1)?;
 
                     for _ in 0..depth {
                         write!(f, "---")?;
@@ -668,9 +554,7 @@ where
 
                     writeln!(f, " {:?}", value)?;
 
-                    if let Some(left) = left {
-                        fmt_node(left, f, depth + 1)?;
-                    }
+                    fmt_node(left, f, depth + 1)?;
                     Ok(())
                 }
             }
