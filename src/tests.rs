@@ -302,7 +302,6 @@ fn test_rebalance() {
     assert_eq!(tree4.right().unwrap().root_value(), Some(&5));
 }
 
-// FIX: Right now this fails.
 #[test]
 fn test_remove() {
     let mut tree = BST::new();

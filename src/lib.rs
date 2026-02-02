@@ -5,8 +5,6 @@ use alloc::boxed::Box;
 use core::fmt;
 
 /// A binary search tree (BST) data structure.
-///
-/// NOTE: This implementation is unbalanced for now.
 pub enum BST<T> {
     /// Represents an empty tree.
     Empty,
@@ -474,35 +472,59 @@ impl<T> BST<T> {
     fn take_max(&mut self) -> Option<T> {
         match self {
             Self::Empty => None,
-            Self::Node { right: Some(r), .. } => r.take_max(),
-            Self::Node {
-                left, right: None, ..
-            } => {
-                // This node is the max
-                let left_subtree = left.take();
-                let value = match core::mem::replace(
-                    self,
-                    match left_subtree {
-                        Some(left_tree) => *left_tree,
-                        None => Self::Empty,
-                    },
-                ) {
-                    Self::Node { value, .. } => value,
-                    _ => unreachable!(),
-                };
-                Some(value)
+            Self::Node { right: Some(r), .. } => {
+                let val = r.take_max();
+                if r.is_empty() {
+                    match self {
+                        Self::Node { right, .. } => *right = None,
+                        _ => unreachable!(),
+                    }
+                }
+                val
+            }
+            // This node is the max
+            Self::Node { left: _, .. } => {
+                let old_self = core::mem::take(self);
+                if let Self::Node {
+                    value, mut left, ..
+                } = old_self
+                {
+                    // If this node had a left child, move it up to this position
+                    if let Some(l) = left.take() {
+                        *self = *l;
+                    }
+                    Some(value)
+                } else {
+                    unreachable!()
+                }
             }
         }
     }
 
     /// Remove a value from the tree.
     ///
-    /// FIX: Sometimes this doesn't remove the value. Because of that, this function isn't usable.
+    /// # Examples
+    ///
+    /// ```
+    /// use bst::BST;
+    ///
+    /// let mut tree = BST::new();
+    /// tree.insert(5);
+    /// tree.insert(3);
+    /// tree.insert(7);
+    /// tree.remove(&5);
+    /// assert!(!tree.contains(&5));
+    /// tree.remove(&7);
+    /// assert!(!tree.contains(&7));
+    /// tree.remove(&3);
+    /// assert!(!tree.contains(&3));
+    /// ```
     pub fn remove(&mut self, val: &T)
     where
         T: Ord,
     {
         match self {
+            // Leaf
             Self::Node {
                 left: None,
                 value,
@@ -510,41 +532,55 @@ impl<T> BST<T> {
             } if value == val => {
                 *self = Self::Empty;
             }
+            // Only Right child
             Self::Node {
                 left: None,
                 value,
                 right,
             } if value == val => {
-                if let Some(right) = right.take() {
-                    *self = *right;
+                if let Some(r) = right.take() {
+                    *self = *r;
                 }
             }
+            // Only Left child
             Self::Node {
                 left,
                 value,
                 right: None,
             } if value == val => {
-                if let Some(left) = left.take() {
-                    *self = *left;
+                if let Some(l) = left.take() {
+                    *self = *l;
                 }
             }
+            // Two children
             Self::Node { left, value, .. } if value == val => {
-                // Two children: find max in left subtree
-                if let Some(left) = left {
-                    if let Some(max) = left.take_max() {
+                if let Some(l) = left {
+                    if let Some(max) = l.take_max() {
                         *value = max;
-                        left.rebalance();
+                        if l.is_empty() {
+                            match self {
+                                Self::Node { left, .. } => *left = None,
+                                _ => unreachable!(),
+                            }
+                        }
                     }
                 }
             }
+            // Node not found
             Self::Node { left, value, right } => {
                 if val < value {
-                    if let Some(left) = left {
-                        left.remove(val);
+                    if let Some(l) = left {
+                        l.remove(val);
+                        if l.is_empty() {
+                            *left = None;
+                        }
                     }
-                } else if val > value {
-                    if let Some(right) = right {
-                        right.remove(val);
+                } else {
+                    if let Some(r) = right {
+                        r.remove(val);
+                        if r.is_empty() {
+                            *right = None;
+                        }
                     }
                 }
             }
