@@ -257,3 +257,26 @@ fn test_remove() {
     let bf = tree.balance_factor();
     assert!(bf.abs() <= 1, "Tree is unbalanced: bf = {}", bf);
 }
+
+#[test]
+fn test_depth() {
+    let mut tree = BST::new();
+    tree.insert(10);
+    assert_eq!(tree.depth(), 1);
+
+    tree.insert(20);
+    assert_eq!(tree.depth(), 2);
+
+    tree.insert(30);
+    // Structure should be:
+    //    20
+    //  10  30
+    assert_eq!(tree.root_value(), Some(&20));
+    assert_eq!(tree.depth(), 2);
+
+    tree.insert(40);
+    tree.insert(50);
+    assert!(tree.depth() >= 3);
+
+    assert!(tree.balance_factor().abs() <= 1);
+}

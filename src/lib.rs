@@ -2,7 +2,7 @@
 
 extern crate alloc;
 use alloc::boxed::Box;
-use core::fmt;
+use core::{cmp::max, fmt};
 
 /// A binary search tree (BST) data structure.
 pub enum BST<T> {
@@ -13,6 +13,7 @@ pub enum BST<T> {
         left: Box<BST<T>>,
         value: T,
         right: Box<BST<T>>,
+        depth: usize,
     },
 }
 
@@ -118,12 +119,7 @@ impl<T> BST<T> {
     pub fn depth(&self) -> usize {
         match self {
             Self::Empty => 0,
-            Self::Node { left, right, .. } => {
-                let left_depth = left.depth();
-                let right_depth = right.depth();
-
-                1 + left_depth.max(right_depth)
-            }
+            Self::Node { depth, .. } => *depth,
         }
     }
 
@@ -179,7 +175,12 @@ impl<T> BST<T> {
     {
         match self {
             Self::Empty => None,
-            Self::Node { left, value, right } => {
+            Self::Node {
+                left,
+                value,
+                right,
+                depth: _,
+            } => {
                 if value == val {
                     return Some(self);
                 } else if val < value {
@@ -254,24 +255,33 @@ impl<T> BST<T> {
     pub fn balance_factor(&self) -> isize {
         match self {
             Self::Empty => 0,
-            Self::Node {
-                left,
-                value: _,
-                right,
-            } => {
+            Self::Node { left, right, .. } => {
                 let left_depth = left.depth();
                 let right_depth = right.depth();
-
-                // FIX: probably bad idea
                 left_depth as isize - right_depth as isize
             }
         }
     }
 
+    /// Helper to update the height of the current node based on its children.
+    fn update_depth(&mut self) {
+        if let Self::Node {
+            left, right, depth, ..
+        } = self
+        {
+            *depth = 1 + max(left.depth(), right.depth());
+        }
+    }
+
     /// Helper function to rotate the tree left.
     fn rotate_left(&mut self) {
-        let (value, left, right) = match core::mem::take(self) {
-            Self::Node { value, left, right } /* if !right.is_empty() */ => (value, left, right),
+        let (value, depth, left, right) = match core::mem::take(self) {
+            Self::Node {
+                value,
+                depth,
+                left,
+                right,
+            } => (value, depth, left, right),
             other => {
                 *self = other;
                 return;
@@ -283,30 +293,45 @@ impl<T> BST<T> {
                 value: r_value,
                 left: r_left,
                 right: r_right,
+                depth: _,
             } => {
-                let new_left = Self::Node {
+                let mut new_left = Self::Node {
                     value,
                     left,
                     right: r_left,
+                    depth,
                 };
+                new_left.update_depth();
 
                 *self = Self::Node {
                     value: r_value,
                     left: Box::new(new_left),
                     right: r_right,
+                    depth: 0, // Temporary
                 };
+                self.update_depth();
             }
             Self::Empty => {
                 // Cannot rotate, put back
-                *self = Self::Node { value, left, right };
+                *self = Self::Node {
+                    value,
+                    left,
+                    right,
+                    depth,
+                };
             }
         }
     }
 
     /// Helper function to rotate the tree right.
     fn rotate_right(&mut self) {
-        let (value, right, left) = match core::mem::take(self) {
-            Self::Node { value, left, right } /* if !left.is_empty() */ => (value, right, left),
+        let (value, depth, right, left) = match core::mem::take(self) {
+            Self::Node {
+                value,
+                depth,
+                left,
+                right,
+            } => (value, depth, right, left),
             other => {
                 *self = other;
                 return;
@@ -318,22 +343,32 @@ impl<T> BST<T> {
                 value: l_value,
                 left: l_left,
                 right: l_right,
+                depth: _,
             } => {
-                let new_right = Self::Node {
+                let mut new_right = Self::Node {
                     value,
                     left: l_right,
                     right,
+                    depth,
                 };
+                new_right.update_depth();
 
                 *self = Self::Node {
                     value: l_value,
                     left: l_left,
                     right: Box::new(new_right),
+                    depth: 0, // Temporary
                 };
+                self.update_depth();
             }
             Self::Empty => {
                 // Cannot rotate, put back
-                *self = Self::Node { value, left, right };
+                *self = Self::Node {
+                    value,
+                    left,
+                    right,
+                    depth,
+                };
             }
         }
     }
@@ -424,33 +459,40 @@ impl<T> BST<T> {
                     left: Box::new(Self::Empty),
                     value: val,
                     right: Box::new(Self::Empty),
+                    depth: 1,
                 };
             }
-            Self::Node { left, value, right } => {
+            Self::Node {
+                left, value, right, ..
+            } => {
                 if *value == val {
                     return;
                 }
                 if val < *value {
                     left.insert(val);
+                    self.update_depth();
                     self.rebalance();
                     return;
                 } else {
                     right.insert(val);
+                    self.update_depth();
                     self.rebalance();
                     return;
                 }
             }
         }
 
+        self.update_depth();
         self.rebalance();
     }
 
-    // Helper function to take ownership of the largest value in the tree.
+    /// Helper function to take ownership of the largest value in the tree.
     fn take_max(&mut self) -> Option<T> {
         match self {
             Self::Empty => None,
             Self::Node { right, .. } if !right.is_empty() => {
                 let val = right.take_max();
+                self.update_depth();
                 self.rebalance();
                 val
             }
@@ -492,7 +534,9 @@ impl<T> BST<T> {
     {
         match self {
             Self::Empty => return,
-            Self::Node { left, value, right } => {
+            Self::Node {
+                left, value, right, ..
+            } => {
                 if *val < *value {
                     left.remove(val);
                 } else if *val > *value {
@@ -513,6 +557,7 @@ impl<T> BST<T> {
             }
         }
 
+        self.update_depth();
         self.rebalance();
     }
 }
@@ -521,16 +566,19 @@ impl<T> Clone for BST<T>
 where
     T: Clone,
 {
-    fn clone(&self) -> Self
-    where
-        T: Clone,
-    {
+    fn clone(&self) -> Self {
         match self {
             Self::Empty => Self::Empty,
-            Self::Node { left, value, right } => Self::Node {
+            Self::Node {
+                left,
+                value,
+                right,
+                depth,
+            } => Self::Node {
                 left: left.clone(),
                 value: value.clone(),
                 right: right.clone(),
+                depth: *depth,
             },
         }
     }
@@ -548,11 +596,13 @@ where
                     left: l1,
                     value: v1,
                     right: r1,
+                    ..
                 },
                 Self::Node {
                     left: l2,
                     value: v2,
                     right: r2,
+                    ..
                 },
             ) => v1 == v2 && l1 == l2 && r1 == r2,
             _ => false,
@@ -572,16 +622,22 @@ where
         ) -> fmt::Result {
             match node {
                 BST::Empty => Ok(()),
-                BST::Node { left, value, right } => {
-                    fmt_node(right, f, depth + 1)?;
+                BST::Node {
+                    left,
+                    value,
+                    right,
+                    depth: node_depth,
+                } => {
+                    fmt_node(right, f, node_depth + 1)?;
 
                     for _ in 0..depth {
                         write!(f, "---")?;
                     }
 
-                    writeln!(f, " {:?}", value)?;
+                    // Display value and the cached depth [H:x]
+                    writeln!(f, "{:?} [{}]", value, node_depth)?;
 
-                    fmt_node(left, f, depth + 1)?;
+                    fmt_node(left, f, node_depth + 1)?;
                     Ok(())
                 }
             }
