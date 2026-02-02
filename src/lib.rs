@@ -127,36 +127,36 @@ impl<T> BST<T> {
         }
     }
 
-    /// Inserts a value into the tree without balancing.
-    ///
-    /// If the value already exists, it will not be inserted again.
-    fn insert_unbalanced(&mut self, val: T) -> &mut Self
-    where
-        T: PartialEq + Ord,
-    {
-        match self {
-            Self::Empty => {
-                *self = Self::Node {
-                    left: Box::new(Self::Empty),
-                    value: val,
-                    right: Box::new(Self::Empty),
-                };
-                return self;
-            }
-            Self::Node { left, value, right } => {
-                if *value == val {
-                    return self;
-                }
-                if val < *value {
-                    left.insert_unbalanced(val);
-                    return self;
-                } else {
-                    right.insert_unbalanced(val);
-                    return self;
-                }
-            }
-        }
-    }
+    // /// Inserts a value into the tree without balancing.
+    // ///
+    // /// If the value already exists, it will not be inserted again.
+    // fn insert_unbalanced(&mut self, val: T) -> &mut Self
+    // where
+    //     T: PartialEq + Ord,
+    // {
+    //     match self {
+    //         Self::Empty => {
+    //             *self = Self::Node {
+    //                 left: Box::new(Self::Empty),
+    //                 value: val,
+    //                 right: Box::new(Self::Empty),
+    //             };
+    //             return self;
+    //         }
+    //         Self::Node { left, value, right } => {
+    //             if *value == val {
+    //                 return self;
+    //             }
+    //             if val < *value {
+    //                 left.insert_unbalanced(val);
+    //                 return self;
+    //             } else {
+    //                 right.insert_unbalanced(val);
+    //                 return self;
+    //             }
+    //         }
+    //     }
+    // }
 
     /// Searches for a value in the tree.
     ///
@@ -418,7 +418,30 @@ impl<T> BST<T> {
     where
         T: Ord,
     {
-        self.insert_unbalanced(val);
+        match self {
+            Self::Empty => {
+                *self = Self::Node {
+                    left: Box::new(Self::Empty),
+                    value: val,
+                    right: Box::new(Self::Empty),
+                };
+            }
+            Self::Node { left, value, right } => {
+                if *value == val {
+                    return;
+                }
+                if val < *value {
+                    left.insert(val);
+                    self.rebalance();
+                    return;
+                } else {
+                    right.insert(val);
+                    self.rebalance();
+                    return;
+                }
+            }
+        }
+
         self.rebalance();
     }
 
@@ -426,7 +449,11 @@ impl<T> BST<T> {
     fn take_max(&mut self) -> Option<T> {
         match self {
             Self::Empty => None,
-            Self::Node { right, .. } if !right.is_empty() => right.take_max(),
+            Self::Node { right, .. } if !right.is_empty() => {
+                let val = right.take_max();
+                self.rebalance();
+                val
+            }
             // This node is the max
             Self::Node { .. } => {
                 let old_self = core::mem::take(self);
